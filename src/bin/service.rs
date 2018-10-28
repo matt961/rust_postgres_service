@@ -57,13 +57,16 @@ fn main() {
         db_actix::DBExecutor(PgConnection::establish(&db_url).unwrap())
     });
 
-    server::new(move || {
+    const LISTEN_IP: &'static str = "0.0.0.0:9000";
+
+    let s = server::new(move || {
         App::with_state(Pg{client: addr.clone()})
             .resource("/", |r| r.method(Method::GET).a(show_posts))
             .resource("/new", |r| r.method(Method::POST).a(new_post))
-    }).bind("localhost:9000").unwrap()
-    .start();
+    }).bind(LISTEN_IP).unwrap();
+    s.start();
 
-    println!("starting on port 80.");
+    println!("connecting to DB at `{}`", std::env::var("DATABASE_URL").unwrap());
+    println!("starting server on `{}`", LISTEN_IP);
     sys.run();
 }
