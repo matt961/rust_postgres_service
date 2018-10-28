@@ -52,21 +52,20 @@ fn new_post(req: &HttpRequest<Pg>) -> FutureResponse<HttpResponse> {
 fn main() {
     let sys = actix::System::new("rust_postgres");
 
-    let addr = SyncArbiter::start(2, || {
-        let db_url = std::env::var("DATABASE_URL").unwrap();
+    let db_url = std::env::var("DATABASE_URL").expect("ENV not set: $DATABASE_URL");
+    let listen_ip = std::env::var("LISTEN_IP").expect("ENV not set: $DB_listen_ip");
+    let addr = SyncArbiter::start(2, move || {
         db_actix::DBExecutor(PgConnection::establish(&db_url).unwrap())
     });
-
-    const LISTEN_IP: &'static str = "0.0.0.0:9000";
 
     let s = server::new(move || {
         App::with_state(Pg{client: addr.clone()})
             .resource("/", |r| r.method(Method::GET).a(show_posts))
             .resource("/new", |r| r.method(Method::POST).a(new_post))
-    }).bind(LISTEN_IP).unwrap();
+    }).bind(&listen_ip).expect(&format!("Could not bind to {}", &listen_ip));
     s.start();
 
     println!("connecting to DB at `{}`", std::env::var("DATABASE_URL").unwrap());
-    println!("starting server on `{}`", LISTEN_IP);
+    println!("starting server on `{}`", listen_ip);
     sys.run();
 }
