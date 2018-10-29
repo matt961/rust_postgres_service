@@ -18,6 +18,8 @@ use actix_web::{
 
 use actix::prelude::*;
 
+use std::thread::sleep;
+
 struct Pg {
     client: Addr<db_actix::DBExecutor>
 }
@@ -51,14 +53,18 @@ fn new_post(req: &HttpRequest<Pg>) -> FutureResponse<HttpResponse> {
 }
 
 fn main() {
-    // wait some time to make sure PG service is set up.
-    let dur = std::time::Duration::from_secs(10);
-    std::thread::sleep(dur);
+    let dur = std::time::Duration::from_secs(5);
+
     let sys = actix::System::new("rust_postgres");
 
     let db_url = std::env::var("DATABASE_URL").expect("ENV not set: $DATABASE_URL");
     let listen_ip = std::env::var("LISTEN_IP").expect("ENV not set: $DB_listen_ip");
     let addr = SyncArbiter::start(2, move || {
+        let mut conn = PgConnection::establish(&db_url);
+        while conn.is_err() {
+            sleep(dur);
+            conn = PgConnection::establish(&db_url);
+        }
         db_actix::DBExecutor(PgConnection::establish(&db_url).unwrap())
     });
 
