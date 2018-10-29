@@ -38,21 +38,21 @@ fn new_post(req: &HttpRequest<Pg>) -> FutureResponse<HttpResponse> {
             println!("new post: {:?}", new_post);
             new_post
         })
-        .and_then(move |new_post| {
-            db_client.send(new_post.clone())
-                .from_err()
-                .and_then(|res| {
-                    match res {
-                        Ok(new_post) => Ok(HttpResponse::Ok().json(new_post)),
-                        Err(_) => Ok(HttpResponse::InternalServerError().into())
-                    }
-                })
-        }).responder()
+    .and_then(move |new_post| {
+        db_client.send(new_post.clone())
+            .from_err()
+            .and_then(|res| {
+                match res {
+                    Ok(new_post) => Ok(HttpResponse::Ok().json(new_post)),
+                    Err(_) => Ok(HttpResponse::InternalServerError().into())
+                }
+            })
+    }).responder()
 }
 
 fn main() {
     // wait some time to make sure PG service is set up.
-    let dur = std::time::Duration::from_secs(5);
+    let dur = std::time::Duration::from_secs(10);
     std::thread::sleep(dur);
     let sys = actix::System::new("rust_postgres");
 
@@ -67,10 +67,10 @@ fn main() {
 
     let s = server::new(move || {
         App::with_state(Pg{client: addr.clone()})
-            .configure(|app| cors::Cors::for_app(app).register())
-            .middleware(Logger::default())
-            .resource("/", |r| r.method(Method::GET).a(show_posts))
-            .resource("/new", |r| r.method(Method::POST).a(new_post))
+           .middleware(Logger::default())
+           .middleware(cors::Cors::default())
+           .resource("/", |r| r.method(Method::GET).a(show_posts))
+           .resource("/new", |r| r.method(Method::POST).a(new_post))
     }).bind(&listen_ip).expect(&format!("Could not bind to {}", &listen_ip));
     s.start();
 

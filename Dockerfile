@@ -36,7 +36,7 @@ RUN apt-get install --assume-yes libpq-dev
 # copy the build artifact from the build stage
 COPY --from=build /rust_postgres_service/target/release/service .
 
-EXPOSE 80
+EXPOSE 5000
 
 # run the web server
 CMD ./service
