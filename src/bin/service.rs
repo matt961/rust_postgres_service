@@ -1,3 +1,4 @@
+extern crate env_logger;
 extern crate rust_postgres;
 extern crate diesel;
 extern crate actix_web;
@@ -12,7 +13,7 @@ use self::diesel::prelude::*;
 use self::rust_postgres::db_actix;
 
 use actix_web::{
-    server, App, HttpRequest, HttpResponse, AsyncResponder, http::Method, FutureResponse, HttpMessage
+    server, App, HttpRequest, HttpResponse, AsyncResponder, http::Method, FutureResponse, HttpMessage, middleware::Logger
 };
 
 use actix::prelude::*;
@@ -61,8 +62,12 @@ fn main() {
         db_actix::DBExecutor(PgConnection::establish(&db_url).unwrap())
     });
 
+    std::env::set_var("RUST_LOG", "actix_web=info");
+    env_logger::init();
+
     let s = server::new(move || {
         App::with_state(Pg{client: addr.clone()})
+            .middleware(Logger::default())
             .resource("/", |r| r.method(Method::GET).a(show_posts))
             .resource("/new", |r| r.method(Method::POST).a(new_post))
     }).bind(&listen_ip).expect(&format!("Could not bind to {}", &listen_ip));
