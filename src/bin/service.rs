@@ -50,6 +50,9 @@ fn new_post(req: &HttpRequest<Pg>) -> FutureResponse<HttpResponse> {
 }
 
 fn main() {
+    // wait some time to make sure PG service is set up.
+    let dur = std::time::Duration::from_secs(5);
+    std::thread::sleep(dur);
     let sys = actix::System::new("rust_postgres");
 
     let db_url = std::env::var("DATABASE_URL").expect("ENV not set: $DATABASE_URL");
