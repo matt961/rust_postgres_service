@@ -13,7 +13,7 @@ use self::diesel::prelude::*;
 use self::rust_postgres::db_actix;
 
 use actix_web::{
-    server, App, HttpRequest, HttpResponse, AsyncResponder, http::Method, FutureResponse, HttpMessage, middleware::Logger
+    server, App, HttpRequest, HttpResponse, AsyncResponder, http::Method, FutureResponse, HttpMessage, middleware::{Logger, cors},
 };
 
 use actix::prelude::*;
@@ -67,6 +67,7 @@ fn main() {
 
     let s = server::new(move || {
         App::with_state(Pg{client: addr.clone()})
+            .configure(|app| cors::Cors::for_app(app).register())
             .middleware(Logger::default())
             .resource("/", |r| r.method(Method::GET).a(show_posts))
             .resource("/new", |r| r.method(Method::POST).a(new_post))
